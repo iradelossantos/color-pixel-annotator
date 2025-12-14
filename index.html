@@ -35,6 +35,12 @@
       flex-direction: column;
       gap: 4px;
     }
+    select {
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
     button {
       padding: 10px 14px;
       border: none;
@@ -69,8 +75,14 @@
     </label>
 
     <label>
-      Tolerance (0–255)
-      <input type="range" id="tolerance" min="0" max="255" value="30" />
+      Tolerance Level
+      <select id="toleranceLevel">
+        <option value="10">Very Strict</option>
+        <option value="25" selected>Strict</option>
+        <option value="50">Medium</option>
+        <option value="90">Loose</option>
+        <option value="150">Very Loose</option>
+      </select>
     </label>
 
     <label>
@@ -91,7 +103,7 @@
     const ctx = canvas.getContext('2d');
     const analyzeBtn = document.getElementById('analyzeBtn');
     const colorPicker = document.getElementById('colorPicker');
-    const toleranceInput = document.getElementById('tolerance');
+    const toleranceSelect = document.getElementById('toleranceLevel');
     const annotationColorInput = document.getElementById('annotationColor');
     const stats = document.getElementById('stats');
 
@@ -133,7 +145,7 @@
 
       const target = hexToRgb(colorPicker.value);
       const annotation = hexToRgb(annotationColorInput.value);
-      const tolerance = Number(toleranceInput.value);
+      const tolerance = Number(toleranceSelect.value);
 
       let matchCount = 0;
 
