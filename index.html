@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Color Pixel Finder & Annotator</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f5f7fb;
+      margin: 0;
+      padding: 24px;
+    }
+    h1 {
+      margin-bottom: 8px;
+    }
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+      background: #fff;
+      padding: 16px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    canvas {
+      border: 1px solid #ccc;
+      max-width: 100%;
+      background: #fff;
+    }
+    label {
+      font-size: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    select {
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+    button {
+      padding: 10px 14px;
+      border: none;
+      border-radius: 8px;
+      background: #2563eb;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button:hover {
+      background: #1e40af;
+    }
+    .stats {
+      margin-top: 12px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Color Pixel Finder & Annotator</h1>
+  <p>Select an image, choose a target color, and the app will highlight matching pixels.</p>
+
+  <div class="controls">
+    <label>
+      Upload Image
+      <input type="file" id="imageInput" accept="image/*" />
+    </label>
+
+    <label>
+      Target Color
+      <input type="color" id="colorPicker" value="#ff0000" />
+    </label>
+
+    <label>
+      Tolerance Level
+      <select id="toleranceLevel">
+        <option value="10">Very Strict</option>
+        <option value="25" selected>Strict</option>
+        <option value="50">Medium</option>
+        <option value="90">Loose</option>
+        <option value="150">Very Loose</option>
+      </select>
+    </label>
+
+    <label>
+      Annotation Color
+      <input type="color" id="annotationColor" value="#00ff00" />
+    </label>
+
+    <button id="analyzeBtn">Find & Annotate</button>
+  </div>
+
+  <canvas id="canvas"></canvas>
+
+  <div class="stats" id="stats"></div>
+
+  <script>
+    const imageInput = document.getElementById('imageInput');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const colorPicker = document.getElementById('colorPicker');
+    const toleranceSelect = document.getElementById('toleranceLevel');
+    const annotationColorInput = document.getElementById('annotationColor');
+    const stats = document.getElementById('stats');
+
+    let img = new Image();
+
+    imageInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        img.onload = () => {
+          canvas.width = img.width;
+          canvas.height = img.height;
+          ctx.drawImage(img, 0, 0);
+          stats.textContent = 'Image loaded.';
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    function hexToRgb(hex) {
+      const bigint = parseInt(hex.slice(1), 16);
+      return {
+        r: (bigint >> 16) & 255,
+        g: (bigint >> 8) & 255,
+        b: bigint & 255
+      };
+    }
+
+    analyzeBtn.addEventListener('click', () => {
+      if (!img.src) return alert('Please upload an image first.');
+
+      ctx.drawImage(img, 0, 0);
+
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imageData.data;
+
+      const target = hexToRgb(colorPicker.value);
+      const annotation = hexToRgb(annotationColorInput.value);
+      const tolerance = Number(toleranceSelect.value);
+
+      let matchCount = 0;
+      const totalPixels = canvas.width * canvas.height;
+
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+
+        const diff = Math.abs(r - target.r) + Math.abs(g - target.g) + Math.abs(b - target.b);
+
+        if (diff <= tolerance * 3) {
+          data[i] = annotation.r;
+          data[i + 1] = annotation.g;
+          data[i + 2] = annotation.b;
+          matchCount++;
+        }
+      }
+
+      ctx.putImageData(imageData, 0, 0);
+      const percentage = ((matchCount / totalPixels) * 100).toFixed(2);
+      stats.textContent = `Matched pixels: ${matchCount.toLocaleString()} (${percentage}% of image)`;
+    });
+  </script>
+</body>
+</html>
